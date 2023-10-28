@@ -1,9 +1,30 @@
 
 # Using The Super-Resolution Convolutional Neural Network for Image Restoration
 
+
+
+
 ![](https://miro.medium.com/max/30/1*FzN1KFBv_q0IramC4nxHRw.png?q=20)
 
 ![](https://miro.medium.com/max/700/1*FzN1KFBv_q0IramC4nxHRw.png)
+
+<!-- TOC start-->
+- [Using The Super-Resolution Convolutional Neural Network for Image Restoration](#using-the-super-resolution-convolutional-neural-network-for-image-restoration)
+   * [What is Single-Image Super-Resolution?](#what-is-single-image-super-resolution)
+   * [The Super-Resolution Convolutional Neural Network (SRCNN)](#the-super-resolution-convolutional-neural-network-srcnn)
+   * [Key Features of SRCNN:](#key-features-of-srcnn)
+- [The SRCNN Network](#the-srcnn-network)
+- [1. Importing Packages](#1-importing-packages)
+   * [_Import the necessary packages_](#import-the-necessary-packages)
+- [2. Image Quality Metrics](#2-image-quality-metrics)
+   * [2.1. PSNR (Peak Signal-to-Noise Ratio)](#21-psnr-peak-signal-to-noise-ratio)
+   * [2.2. MSE (Mean Squared Error)](#22-mse-mean-squared-error)
+   * [2.3. SSIM (Structural Similarity Index)](#23-ssim-structural-similarity-index)
+- [3. Preparing Images](#3-preparing-images)
+- [3. Testing Low-Resolution Images](#3-testing-low-resolution-images)
+- [4. Building the SRCNN Model](#4-building-the-srcnn-model)
+- [5. Deploying the SRCNN](#5-deploying-the-srcnn)
+<!-- TOC end -->
 
 Welcome to this comprehensive tutorial on single-image super-resolution (SR). In this tutorial, we will delve into the fascinating world of image enhancement and the techniques that allow us to recover high-resolution details from low-resolution inputs, a concept often dramatized in modern crime shows as "enhancing" images.
 
