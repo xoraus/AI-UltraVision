@@ -1,4 +1,33 @@
 
+## Quick Start: Understanding Image Cropping
+
+If you're wondering **"Why do we need to crop images before SRCNN?"**, you're not alone! 
+
+### 🔍 **Quick Answer**
+The `modcrop` function ensures image dimensions are divisible by the scale factor (usually 3), which is required for the SRCNN network architecture to work properly.
+
+### 🧮 **Your Example Explained**
+For an image with shape (176, 197, 3):
+- Height: 176 - (176 % 3) = 176 - 2 = **174**
+- Width: 197 - (197 % 3) = 197 - 2 = **195** 
+- Result: **(174, 195, 3)** ← Note: width should be 195, not 194
+
+### 📊 **Interactive Demo**
+Run our demonstration script to see exactly how modcrop works:
+```bash
+python modcrop_demo.py
+```
+
+This will show you:
+- ✅ Mathematical calculations for different image sizes
+- ✅ Why SRCNN architecture requires this cropping
+- ✅ How minimal the pixel loss actually is (usually <2%)
+
+### 📖 **Detailed Explanation**
+For a complete technical explanation, see the [FAQ section](#frequently-asked-questions) below.
+
+---
+
 # Using The Super-Resolution Convolutional Neural Network for Image Restoration
 
 
@@ -245,11 +274,55 @@ Once we have tested our network, we can perform single-image super-resolution on
 _# define necessary image processing functions_  
 ```py
 # Deploying the SRCNN
+
+## Why Image Cropping (modcrop) is Necessary
+
+Before feeding images to the SRCNN model, we need to crop them using the `modcrop` function to ensure the image dimensions are divisible by the scale factor. This is crucial for several reasons:
+
+### 1. **Network Architecture Constraints**
+- SRCNN uses convolutional layers with specific kernel sizes (9×9, 3×3, 5×5)
+- Some layers use 'valid' padding, which reduces output dimensions
+- Input dimensions must be compatible with the network's expected output size
+
+### 2. **Scale Factor Alignment**  
+- Super-resolution typically involves upscaling by integer factors (2×, 3×, 4×)
+- Having dimensions divisible by the scale factor prevents edge artifacts
+- Ensures consistent pixel mapping during the upsampling process
+
+### 3. **Training Consistency**
+- The SRCNN model was trained on images with dimensions divisible by the scale factor
+- Using similar dimensional constraints during inference maintains consistency
+- Helps preserve the learned feature representations
+
+### 4. **Mathematical Example**
+For an image with shape (176, 197, 3) and scale factor 3:
+- Height: 176 - (176 % 3) = 176 - 2 = 174
+- Width: 197 - (197 % 3) = 197 - 2 = 195
+- Result: (174, 195, 3) - only 2-3 pixels cropped from each dimension
+
 def modcrop(img, scale):
+    """
+    Crop image to make dimensions divisible by scale factor.
+    
+    This function ensures that the image height and width are divisible 
+    by the scale factor, which is essential for proper SRCNN processing.
+    
+    Args:
+        img (numpy.ndarray): Input image with shape (H, W, C)
+        scale (int): Scale factor (typically 3 for SRCNN)
+        
+    Returns:
+        numpy.ndarray: Cropped image with dimensions divisible by scale
+        
+    Example:
+        >>> img = np.zeros((176, 197, 3))  # Original shape
+        >>> cropped = modcrop(img, 3)      # After cropping
+        >>> print(cropped.shape)           # (174, 195, 3)
+    """
     tmpsz = img.shape
-    sz = tmpsz[0:2]
-    sz = sz - np.mod(sz, scale)
-    img = img[0:sz[0], 0:sz[1]]
+    sz = tmpsz[0:2]  # Get height and width only
+    sz = sz - np.mod(sz, scale)  # Remove remainder when divided by scale
+    img = img[0:sz[0], 0:sz[1]]  # Crop to new dimensions
     return img
 
 def shave(image, border):
@@ -376,3 +449,73 @@ References:
 [5]  [http://mmlab.ie.cuhk.edu.hk/projects/SRCNN.html](http://mmlab.ie.cuhk.edu.hk/projects/SRCNN.html).
 
 [6]  [Learning a Deep Convolutional Network for Image Super-Resolution](https://arxiv.org/pdf/1501.00092)
+
+---
+
+## Frequently Asked Questions
+
+### Q: Why do we need to crop images before inputting them to SRCNN?
+
+**A:** The `modcrop` function is essential for several technical reasons:
+
+#### 1. **SRCNN Architecture Requirements**
+The SRCNN network has a specific architecture with three convolutional layers:
+- **Patch Extraction**: 9×9 conv with 128 filters (valid padding)
+- **Non-linear Mapping**: 3×3 conv with 64 filters (same padding) 
+- **Reconstruction**: 5×5 conv with 1 filter (valid padding)
+
+The use of 'valid' padding in the first and last layers means the output dimensions are smaller than input dimensions. Specifically, the network reduces dimensions by:
+- First layer: reduces by 8 pixels (4 on each side for 9×9 kernel)
+- Last layer: reduces by 4 pixels (2 on each side for 5×5 kernel)
+- **Total reduction: 12 pixels per dimension**
+
+#### 2. **Scale Factor Consistency**
+Super-resolution works by learning mappings at specific scale factors (2×, 3×, 4×). The model expects:
+- Input and output dimensions to have a consistent relationship
+- Dimensions divisible by the scale factor to avoid fractional pixel mapping
+- Proper alignment for accurate reconstruction
+
+#### 3. **Training Data Compatibility** 
+The SRCNN was trained on image patches where:
+- All dimensions were divisible by the scale factor
+- Consistent cropping was applied during training
+- Using the same preprocessing ensures the model performs optimally
+
+#### 4. **Practical Example**
+```python
+# Original image: (176, 197, 3)
+# Scale factor: 3
+
+# Without modcrop - problematic:
+# 176 % 3 = 2 (not divisible)
+# 197 % 3 = 2 (not divisible)
+
+# With modcrop - proper alignment:
+height = 176 - (176 % 3) = 174  # Divisible by 3
+width = 197 - (197 % 3) = 195   # Divisible by 3
+# Result: (174, 195, 3) - only 2 pixels lost per dimension
+```
+
+#### 5. **Alternative Approaches**
+Instead of cropping, other super-resolution methods use:
+- **Padding**: Add pixels to make dimensions divisible (but can introduce artifacts)
+- **Reflection padding**: Mirror edge pixels (used in some modern networks)
+- **Zero padding**: Add black pixels (simple but can create borders)
+
+SRCNN uses cropping because it's simple, effective, and matches the training methodology.
+
+### Q: Does cropping affect image quality significantly?
+
+**A:** The impact is minimal:
+- Typically removes only 1-3 pixels per dimension
+- Represents <2% of total image area for most images
+- The super-resolution improvement far outweighs the minor crop loss
+- Edge pixels often contain less critical information than central regions
+
+### Q: Can I modify the network to avoid cropping?
+
+**A:** Possible but not recommended:
+- Would require retraining the entire network
+- Different padding strategies would change learned features
+- The original SRCNN paper's results are based on this cropping approach
+- Modern alternatives (ESRGAN, Real-ESRGAN) handle arbitrary dimensions better
